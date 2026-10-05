@@ -1,0 +1,10 @@
+# binaries
+/faro
+*.exe
+*.test
+*.out
+
+# editors / OS
+.idea/
+.vscode/
+.DS_Store
