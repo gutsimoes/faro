@@ -72,22 +72,21 @@ func (c *Collection) Insert(id string, vec []float32) error {
 // Search returns up to k nearest neighbors of query by L2 distance
 // ties are decided by ID so results are always stable. has to scan every vector
 func (c *Collection) Search(query []float32, k int) ([]Result, error) {
-	if k <= 0 {
-		return nil, fmt.Errorf("k must be greater than 0, got %d", k)
-	}
-	if err := c.validate(query); err != nil {
+	if err := c.validateSearch(query, k); err != nil {
 		return nil, err
 	}
 	c.mu.RLock()
-
 	results := make([]Result, len(c.ids))
 	for i, id := range c.ids {
 		vec := c.data[i*c.dim : (i+1)*c.dim]
 		results[i] = Result{ID: id, Distance: L2(query, vec)}
 	}
-
 	c.mu.RUnlock()
 
+	return rankResults(results, k), nil
+}
+
+func rankResults(results []Result, k int) []Result {
 	sort.Slice(results, func(i, j int) bool {
 		if results[i].Distance == results[j].Distance {
 			return results[i].ID < results[j].ID
@@ -95,11 +94,14 @@ func (c *Collection) Search(query []float32, k int) ([]Result, error) {
 		return results[i].Distance < results[j].Distance
 	})
 
-	if k < len(results) {
-		results = results[:k]
-	}
+	return results[:min(k, len(results))]
+}
 
-	return results, nil
+func (c *Collection) validateSearch(query []float32, k int) error {
+	if k <= 0 {
+		return fmt.Errorf("k must be greater than 0, got %d", k)
+	}
+	return c.validate(query)
 }
 
 func (c *Collection) validate(vec []float32) error {
