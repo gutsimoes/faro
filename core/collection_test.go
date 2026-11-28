@@ -2,6 +2,7 @@ package core
 
 import (
 	"math"
+	"slices"
 	"testing"
 )
 
@@ -65,6 +66,37 @@ func TestInsertCopiesVector(t *testing.T) {
 	}
 	if got[0].Distance != 0 {
 		t.Errorf("distance = %v, want 0", got[0].Distance)
+	}
+}
+
+func TestGetReturnsCopy(t *testing.T) {
+	c := newTestCollection(t)
+	if err := c.Insert("a", []float32{1, 2}); err != nil {
+		t.Fatal(err)
+	}
+	want := []float32{3, 4}
+	if err := c.Insert("b", want); err != nil {
+		t.Fatal(err)
+	}
+
+	vec, found := c.Get("b")
+	if !found || !slices.Equal(vec, want) {
+		t.Fatalf("Get(b) = %v, %t; want %v, true", vec, found, want)
+	}
+	vec[0] = 100
+	stored, found := c.Get("b")
+	if !found || !slices.Equal(stored, want) {
+		t.Errorf("Get(b) after modifying returned vector = %v, %t; want %v, true", stored, found, want)
+	}
+}
+
+func TestGetMissingID(t *testing.T) {
+	c := newTestCollection(t)
+	if err := c.Insert("a", []float32{1, 2}); err != nil {
+		t.Fatal(err)
+	}
+	if vec, found := c.Get("missing"); vec != nil || found {
+		t.Errorf("Get(missing) = %v, %t; want nil, false", vec, found)
 	}
 }
 

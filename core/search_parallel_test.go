@@ -137,6 +137,11 @@ func TestConcurrentInsertAndSearch(t *testing.T) {
 			query := []float32{0, 0}
 			want := []Result{{ID: "origin", Distance: 0}}
 			for range iterations {
+				vec, found := c.Get("origin")
+				if !found || !slices.Equal(vec, query) {
+					t.Errorf("Get(origin): got %v, %t; want %v, true", vec, found, query)
+					return
+				}
 				got, err := c.Search(query, 1)
 				if err != nil || !slices.Equal(got, want) {
 					t.Errorf("Search: got %v, %v; want %v", got, err, want)

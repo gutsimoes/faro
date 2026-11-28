@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"sync"
 )
@@ -67,6 +68,19 @@ func (c *Collection) Insert(id string, vec []float32) error {
 	c.ids = append(c.ids, id)
 	c.data = append(c.data, vec...) //append copies the value into the block
 	return nil
+}
+
+// Get returns a copy of the vector stored under id, or nil and false if absent.
+func (c *Collection) Get(id string) ([]float32, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	index, exists := c.pos[id]
+	if !exists {
+		return nil, false
+	}
+	start := index * c.dim
+	return slices.Clone(c.data[start : start+c.dim]), true
 }
 
 // Search returns up to k nearest neighbors of query by L2 distance
